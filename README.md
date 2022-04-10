@@ -1,3 +1,3 @@
 # compose-codelab
-Compose를 알아보자 <br>
+Compose Codelab 따라하기 <br>
 Link : https://developer.android.com/courses/pathways/compose
