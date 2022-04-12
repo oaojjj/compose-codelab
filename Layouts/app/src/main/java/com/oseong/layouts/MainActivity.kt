@@ -20,6 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,14 +35,58 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LayoutsTheme {
-                StaggeredGrid(modifier = Modifier) {
-                    for (topic in topics) {
-                        Chip(modifier = Modifier.padding(8.dp), text = topic)
-                    }
-                }
+                DecoupledConstraintLayout()
             }
         }
     }
+}
+
+@Composable
+fun BodyContent2(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(color = Color.LightGray, shape = RectangleShape)
+            .size(200.dp)
+            .padding(16.dp)
+            .background(color=Color.Yellow)
+            .horizontalScroll(rememberScrollState())
+    ) {
+        StaggeredGrid {
+            for (topic in topics) {
+                Chip(modifier = Modifier.padding(8.dp), text = topic)
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewContent2() {
+    BodyContent2()
+}
+
+@Composable
+fun BodyContent(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(color = Color.LightGray, shape = RectangleShape)
+            .padding(16.dp)
+            .size(200.dp)
+            .background(color=Color.Yellow)
+            .horizontalScroll(rememberScrollState())
+    ) {
+        StaggeredGrid {
+            for (topic in topics) {
+                Chip(modifier = Modifier.padding(8.dp), text = topic)
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewContent() {
+    BodyContent()
 }
 
 /*
@@ -168,7 +214,6 @@ fun LayoutsCodelabPreview() {
         LayoutsCodelab()
     }
 }*/
-
 
 
 /*
