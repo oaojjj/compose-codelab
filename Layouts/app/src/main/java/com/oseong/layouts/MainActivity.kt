@@ -27,17 +27,24 @@ import coil.compose.rememberImagePainter
 import com.oseong.layouts.ui.theme.LayoutsTheme
 import kotlinx.coroutines.launch
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             LayoutsTheme {
-                ScrollingList()
+                StaggeredGrid(modifier = Modifier) {
+                    for (topic in topics) {
+                        Chip(modifier = Modifier.padding(8.dp), text = topic)
+                    }
+                }
             }
         }
     }
 }
 
+/*
+//Working with lists
 @Composable
 fun ScrollingList() {
     val listSize = 100
@@ -91,7 +98,7 @@ fun ImageListItem(index: Int) {
     }
 }
 
-/*@Composable
+@Composable
 fun LazyList() {
     // We save the scrolling position with this state that can also
     // be used to programmatically scroll the list
@@ -118,6 +125,7 @@ fun SimpleList() {
 }*/
 
 /*
+// Material Components
 @Composable
 fun LayoutsCodelab() {
     Scaffold(
@@ -162,7 +170,9 @@ fun LayoutsCodelabPreview() {
 }*/
 
 
+
 /*
+// Modifeirs
 @Composable
 fun PhotographerCard(modifier: Modifier = Modifier) {
     Row(
