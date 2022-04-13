@@ -21,13 +21,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,7 +47,7 @@ fun TodoScreen(
 ) {
     Column {
         TodoItemInputBackground(elevate = true, modifier = Modifier.fillMaxWidth()) {
-            TodoItemInput(onItemComplete = onAddItem)
+            TodoItemEntryInput(onItemComplete = onAddItem)
         }
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -78,19 +76,38 @@ fun TodoScreen(
 
 // State hoisting을 위해서 자식 컴포저블의 상태를 최소 공통 상위 요소로 끌어올림 -> text(state)
 @Composable
-fun TodoItemInput(onItemComplete: (TodoItem) -> Unit) {
+fun TodoItemEntryInput(onItemComplete: (TodoItem) -> Unit) {
     // onItemComplete is an event will fire when an item is completed by the user
 
     // 상태를 hoisting 했으니까 상위 요소는 상태 객체를 만들고 아래로 전달함 -> state는 아래로
     val (text, setText) = remember { mutableStateOf("") }
     val (icon, setIcon) = remember { mutableStateOf(TodoIcon.Default) }
-    val textIsBlank = text.isNotBlank()
+    val isTextBlank = text.isNotBlank()
     val submit = {
         onItemComplete(TodoItem(text, icon))
         setIcon(TodoIcon.Default)
         setText("")
     }
 
+    TodoItemInput(
+        text = text,
+        onTextChange = setText,
+        icon = icon,
+        onIconChange = setIcon,
+        submit = submit,
+        isTextBlank = isTextBlank
+    )
+}
+
+@Composable
+fun TodoItemInput(
+    text: String,
+    onTextChange: (String) -> Unit,
+    icon: TodoIcon,
+    onIconChange: (TodoIcon) -> Unit,
+    submit: () -> Unit,
+    isTextBlank: Boolean
+) {
     Column {
         Row(
             Modifier
@@ -99,7 +116,7 @@ fun TodoItemInput(onItemComplete: (TodoItem) -> Unit) {
         ) {
             TodoInputText(
                 text = text,
-                onTextChange = setText,
+                onTextChange = onTextChange,
                 onImeAction = submit,
                 modifier = Modifier
                     .weight(1f)
@@ -110,11 +127,11 @@ fun TodoItemInput(onItemComplete: (TodoItem) -> Unit) {
                 onClick = submit,
                 text = "Add",
                 modifier = Modifier.align(Alignment.CenterVertically),
-                enabled = textIsBlank
+                enabled = isTextBlank
             )
         }
-        if (textIsBlank) {
-            AnimatedIconRow(icon = icon, onIconChange = setIcon, Modifier.padding(top = 8.dp))
+        if (isTextBlank) {
+            AnimatedIconRow(icon = icon, onIconChange = onIconChange, Modifier.padding(top = 8.dp))
         } else {
             Spacer(modifier = Modifier.height(16.dp))
         }
