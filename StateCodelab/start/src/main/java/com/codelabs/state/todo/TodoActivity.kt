@@ -49,10 +49,15 @@ class TodoActivity : AppCompatActivity() {
 private fun TodoActivityScreen(todoViewModel: TodoViewModel) {
     // observeAsState -> LiveData<t>를 관찰하고 이를 State<T> 객체로 변환함
     //                   컴포저블이 컴포지션에서 제거되면 자동으로 관찰을 중지함
-    val items: List<TodoItem> by todoViewModel.todoItems.observeAsState(initial = listOf())
+    // val items: List<TodoItem> by todoViewModel.todoItems.observeAsState(initial = listOf())
+
     TodoScreen(
-        items = items,
-        onAddItem = { todoViewModel.addItem(it) },
-        onRemoveItem = { todoViewModel.removeItem(it) }
+        items = todoViewModel.todoItems,
+        currentlyEditing = todoViewModel.currentEditItem,
+        onAddItem = { todoViewModel.addItem(it) }, // 이렇게도 가능
+        onRemoveItem = todoViewModel::removeItem,  // 이렇게도 가능
+        onStartEdit = todoViewModel::onEditItemSelected,
+        onEditItemChange = todoViewModel::onEditItemChange,
+        onEditDone = todoViewModel::onEditDone
     )
 }

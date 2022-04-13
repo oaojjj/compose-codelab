@@ -16,6 +16,7 @@
 
 package com.codelabs.state.todo
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.codelabs.state.util.generateRandomTodoItem
@@ -42,23 +44,51 @@ import kotlin.random.Random
 @Composable
 fun TodoScreen(
     items: List<TodoItem>,
+    currentlyEditing: TodoItem?,
     onAddItem: (TodoItem) -> Unit,
-    onRemoveItem: (TodoItem) -> Unit
+    onRemoveItem: (TodoItem) -> Unit,
+    onStartEdit: (TodoItem) -> Unit,
+    onEditItemChange: (TodoItem) -> Unit,
+    onEditDone: () -> Unit
 ) {
     Column {
+        val enableTopSection = currentlyEditing == null
         TodoItemInputBackground(elevate = true, modifier = Modifier.fillMaxWidth()) {
-            TodoItemEntryInput(onItemComplete = onAddItem)
+            if (enableTopSection) {
+                TodoItemEntryInput(onItemComplete = onAddItem)
+            } else {
+                Text(
+                    "Editing item",
+                    style = MaterialTheme.typography.h6,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                )
+            }
         }
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(top = 8.dp)
         ) {
-            items(items = items) {
-                TodoRow(
-                    todo = it,
-                    onItemClicked = { onRemoveItem(it) },
-                    modifier = Modifier.fillParentMaxWidth()
-                )
+            items(items = items) { todo ->
+                if (currentlyEditing?.id == todo.id) {
+                    Log.d("test", "TodoScreen: recomposition in editor${todo.task}")
+                    TodoRowInlineEditor(
+                        item = currentlyEditing,
+                        onEditItemChange = onEditItemChange,
+                        onEditDone = onEditDone,
+                        onRemoveItem = { onRemoveItem(todo) }
+                    )
+                } else {
+                    Log.d("test", "TodoScreen: recomposition in row${todo.task}")
+                    TodoRow(
+                        todo = todo,
+                        onItemClicked = { onStartEdit(it) },
+                        modifier = Modifier.fillParentMaxWidth()
+                    )
+                }
             }
         }
 
@@ -75,6 +105,7 @@ fun TodoScreen(
 }
 
 // State hoisting을 위해서 자식 컴포저블의 상태를 최소 공통 상위 요소로 끌어올림 -> text(state)
+// stateful composable
 @Composable
 fun TodoItemEntryInput(onItemComplete: (TodoItem) -> Unit) {
     // onItemComplete is an event will fire when an item is completed by the user
@@ -96,9 +127,13 @@ fun TodoItemEntryInput(onItemComplete: (TodoItem) -> Unit) {
         onIconChange = setIcon,
         submit = submit,
         isTextBlank = isTextBlank
-    )
+    ) {
+        // slot 사용
+        TodoEditButton(onClick = submit, text = "Add", enabled = isTextBlank)
+    }
 }
 
+// TodoItemEntryInput에서 ui 추출 -> stateless composable
 @Composable
 fun TodoItemInput(
     text: String,
@@ -106,7 +141,8 @@ fun TodoItemInput(
     icon: TodoIcon,
     onIconChange: (TodoIcon) -> Unit,
     submit: () -> Unit,
-    isTextBlank: Boolean
+    isTextBlank: Boolean,
+    buttonSlot: @Composable () -> Unit
 ) {
     Column {
         Row(
@@ -122,13 +158,16 @@ fun TodoItemInput(
                     .weight(1f)
                     .padding(end = 8.dp)
             )
-            // text가 비어있는 경우, 버튼을 비활성화
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(Modifier.align(Alignment.CenterVertically)) { buttonSlot() }
+
+            /*// text가 비어있는 경우, 버튼을 비활성화
             TodoEditButton(
                 onClick = submit,
                 text = "Add",
                 modifier = Modifier.align(Alignment.CenterVertically),
                 enabled = isTextBlank
-            )
+            )*/
         }
         if (isTextBlank) {
             AnimatedIconRow(icon = icon, onIconChange = onIconChange, Modifier.padding(top = 8.dp))
@@ -138,11 +177,49 @@ fun TodoItemInput(
     }
 }
 
+// Stateless composable
+// Stateless 컴포저블은 상태가 저장되는 것과 분리
+@Composable
+fun TodoRowInlineEditor(
+    item: TodoItem,
+    onEditItemChange: (TodoItem) -> Unit,
+    onEditDone: () -> Unit,
+    onRemoveItem: () -> Unit
+) = TodoItemInput(
+    text = item.task,
+    onTextChange = { onEditItemChange(item.copy(task = it)) },
+    icon = item.icon,
+    onIconChange = { onEditItemChange(item.copy(icon = it)) },
+    submit = onEditDone,
+    isTextBlank = true
+) {
+    // bottomSlot 사용
+    Row {
+        val shrinkButtons = Modifier.widthIn(20.dp)
+        TextButton(onClick = onEditDone, modifier = shrinkButtons) {
+            Text(
+                text = "\uD83D\uDCBE", // floppy disk image? emoji?
+                textAlign = TextAlign.End,
+                modifier = Modifier.width(30.dp)
+            )
+        }
+        TextButton(onClick = onRemoveItem, modifier = shrinkButtons) {
+            Text(
+                text = "❌",
+                textAlign = TextAlign.End,
+                modifier = Modifier.width(30.dp)
+            )
+        }
+    }
+}
+
+/*
 @Composable
 fun TodoInputTextField(text: String, onTextChange: (String) -> Unit, modifier: Modifier) {
     // val (text, setText) = remember { mutableStateOf("") }
     // TodoInputText(text, onTextChange, modifier)
 }
+*/
 
 
 /**
@@ -188,7 +265,7 @@ fun PreviewTodoScreen() {
         TodoItem("Apply state", TodoIcon.Done),
         TodoItem("Build dynamic UIs", TodoIcon.Square)
     )
-    TodoScreen(items, {}, {})
+    TodoScreen(items, null, {}, {}, {}, {}, {})
 }
 
 @Preview(showBackground = true)
