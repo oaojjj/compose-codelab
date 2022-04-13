@@ -21,6 +21,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import com.codelabs.state.ui.StateCodelabTheme
 
 class TodoActivity : AppCompatActivity() {
@@ -32,9 +35,24 @@ class TodoActivity : AppCompatActivity() {
         setContent {
             StateCodelabTheme {
                 Surface {
-                    // TODO: build the screen in compose
+                    TodoActivityScreen(todoViewModel)
                 }
             }
         }
     }
+}
+
+
+// 단방향 데이터 흐름 디자인
+// ViewModel과 TodoScreen 사이의 다리 역할
+@Composable
+private fun TodoActivityScreen(todoViewModel: TodoViewModel) {
+    // observeAsState -> LiveData<t>를 관찰하고 이를 State<T> 객체로 변환함
+    //                   컴포저블이 컴포지션에서 제거되면 자동으로 관찰을 중지함
+    val items: List<TodoItem> by todoViewModel.todoItems.observeAsState(initial = listOf())
+    TodoScreen(
+        items = items,
+        onAddItem = { todoViewModel.addItem(it) },
+        onRemoveItem = { todoViewModel.removeItem(it) }
+    )
 }

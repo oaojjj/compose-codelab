@@ -25,12 +25,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,9 @@ fun TodoScreen(
     onRemoveItem: (TodoItem) -> Unit
 ) {
     Column {
+        TodoItemInputBackground(elevate = true, modifier = Modifier.fillMaxWidth()) {
+            TodoItemInput(onItemComplete = onAddItem)
+        }
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(top = 8.dp)
@@ -76,6 +80,48 @@ fun TodoScreen(
     }
 }
 
+// State hoisting을 위해서 자식 컴포저블의 상태를 최소 공통 상위 요소로 끌어올림 -> text(state)
+@Composable
+fun TodoItemInput(onItemComplete: (TodoItem) -> Unit) {
+    // onItemComplete is an event will fire when an item is completed by the user
+
+    // 상태를 hoisting 했으니까 상위 요소는 상태 객체를 만들고 아래로 전달함 -> state는 아래로
+    val (text, setText) = remember { mutableStateOf("") }
+
+    Column {
+        Row(
+            Modifier
+                .padding(horizontal = 16.dp)
+                .padding(top = 16.dp)
+        ) {
+            TodoInputTextField(
+                text = text,
+                onTextChange = setText,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp)
+            )
+            // text가 비어있는 경우, 버튼을 비활성화
+            TodoEditButton(
+                onClick = {
+                    onItemComplete(TodoItem(task = text)) // event는 위로 방출
+                    setText("") // event 방출하고 text 초기화
+                },
+                text = "Add",
+                modifier = Modifier.align(Alignment.CenterVertically),
+                enabled = text.isNotBlank()
+            )
+        }
+    }
+}
+
+@Composable
+fun TodoInputTextField(text: String, onTextChange: (String) -> Unit, modifier: Modifier) {
+    // val (text, setText) = remember { mutableStateOf("") }
+    TodoInputText(text, onTextChange, modifier)
+}
+
+
 /**
  * Stateless composable that displays a full-width [TodoItem].
  *
@@ -84,7 +130,12 @@ fun TodoScreen(
  * @param modifier modifier for this element
  */
 @Composable
-fun TodoRow(todo: TodoItem, onItemClicked: (TodoItem) -> Unit, modifier: Modifier = Modifier) {
+fun TodoRow(
+    todo: TodoItem,
+    onItemClicked: (TodoItem) -> Unit,
+    modifier: Modifier = Modifier,
+    iconAlpha: Float = remember(todo.id) { randomTint() }
+) {
     Row(
         modifier = modifier
             .clickable { onItemClicked(todo) }
@@ -94,6 +145,7 @@ fun TodoRow(todo: TodoItem, onItemClicked: (TodoItem) -> Unit, modifier: Modifie
         Text(todo.task)
         Icon(
             imageVector = todo.icon.imageVector,
+            tint = LocalContentColor.current.copy(alpha = iconAlpha),
             contentDescription = stringResource(id = todo.icon.contentDescription)
         )
     }
@@ -103,7 +155,8 @@ private fun randomTint(): Float {
     return Random.nextFloat().coerceIn(0.3f, 0.9f)
 }
 
-@Preview
+
+@Preview(showBackground = true)
 @Composable
 fun PreviewTodoScreen() {
     val items = listOf(
@@ -115,7 +168,7 @@ fun PreviewTodoScreen() {
     TodoScreen(items, {}, {})
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun PreviewTodoRow() {
     val todo = remember { generateRandomTodoItem() }
