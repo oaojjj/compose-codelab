@@ -17,18 +17,28 @@
 package com.example.compose.rally
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.compose.rally.data.UserData
+import com.example.compose.rally.ui.accounts.AccountsBody
+import com.example.compose.rally.ui.bills.BillsBody
 import com.example.compose.rally.ui.components.RallyTabRow
+import com.example.compose.rally.ui.overview.OverviewBody
 import com.example.compose.rally.ui.theme.RallyTheme
 
 /**
@@ -47,23 +57,47 @@ class RallyActivity : ComponentActivity() {
 @Composable
 fun RallyApp() {
     RallyTheme {
-        val allScreens = RallyScreen.values().toList()
-        var currentScreen by rememberSaveable { mutableStateOf(RallyScreen.Overview) }
+        val allScreens = RallyScreen.values().toList() // 스크린 목록
+        val navController = rememberNavController() // 네비게이션 컨트롤러 설정
+        val backstackEntry = navController.currentBackStackEntryAsState()
+        val currentScreen = RallyScreen.fromRoute(
+            backstackEntry.value?.destination?.route
+        )
+        Log.d("route_name", "RallyApp: ${backstackEntry.value?.destination?.route}")
+
         Scaffold(
             topBar = {
                 RallyTabRow(
                     allScreens = allScreens,
-                    onTabSelected = { screen -> currentScreen = screen },
+                    onTabSelected = { screen ->
+                        navController.navigate(screen.name) // 화면 이동
+                    },
                     currentScreen = currentScreen
                 )
             }
         ) { innerPadding ->
-            Box(Modifier.padding(innerPadding)) {
+            /*Box(Modifier.padding(innerPadding)) {
                 currentScreen.content(
                     onScreenChange = { screen ->
                         currentScreen = RallyScreen.valueOf(screen)
                     }
                 )
+            }*/
+            NavHost( // NavHost를 추가해서 컨트롤러와 시작목적지를 지정
+                navController = navController,
+                startDestination = RallyScreen.Overview.name,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                // NavGraphBuilder를 이용하여 NavBackStackEntry를 정의 -> 스크린 목록 써넣으면 될듯
+                composable(route = RallyScreen.Overview.name) {
+                    OverviewBody()
+                }
+                composable(route = RallyScreen.Accounts.name) {
+                    AccountsBody(accounts = UserData.accounts)
+                }
+                composable(route = RallyScreen.Bills.name) {
+                    BillsBody(bills = UserData.bills)
+                }
             }
         }
     }
